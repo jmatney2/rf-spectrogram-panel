@@ -1,0 +1,45 @@
+# PSD database + synthetic live feed, shared by docker-compose.yaml (CI /
+# scaffold stack) and docker-compose.dev.yaml (local dev). All services share
+# the project's default network, so Grafana reaches Postgres as host "psd".
+services:
+  # PostgreSQL holding the PSD capture. The provisioned Grafana datasource
+  # connects to it over this compose network (host "psd"). You can also reach
+  # it from the host at localhost:3125 to run your own SQL.
+  psd:
+    image: postgres:15-alpine
+    container_name: 'psd-db'
+    environment:
+      POSTGRES_DB: psd
+      POSTGRES_USER: psd
+      POSTGRES_PASSWORD: psd
+    ports:
+      - "3125:5432/tcp"
+    volumes:
+      - psdpgdata:/var/lib/postgresql/data
+      # Applied automatically on first start (empty volume).
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
+  # Live synthetic capture: backfills the last 3 days (idempotent), then
+  # publishes one record per band every minute. Band plan: gen_records.py
+  # --centers/--span (defaults: 4 bands x 10 MHz).
+  # Stop it (`docker compose stop psd-feed`) before loading real data.
+  psd-feed:
+    image: postgres:15-alpine
+    container_name: 'psd-feed'
+    depends_on:
+      - psd
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: psd
+    volumes:
+      - ./tools:/app/tools:ro
+      - ./db:/app/db:ro
+    entrypoint: ['sh', '-c']
+    command:
+      - >-
+        apk add --no-cache python3 py3-numpy >/dev/null &&
+        until pg_isready -q -h psd -U psd; do sleep 1; done &&
+        exec python3 -u /app/tools/gen_records.py --follow --days 3 --psql 'psql -h psd -U psd -d psd'
+
+volumes:
+  psdpgdata:

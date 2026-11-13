@@ -1,0 +1,23 @@
+apiVersion: 1
+
+datasources:
+  - name: TestData DB
+    type: testdata
+    uid: trlxrdZVk
+    isDefault: true
+  - name: PSD Postgres
+    type: postgres
+    uid: psd-pg
+    # Over the compose network the Postgres container is reachable as "psd".
+    url: psd:5432
+    user: psd
+    basicAuth: true
+    secureJsonData:
+      password: psd
+    jsonData:
+      # The Postgres plugin reads the target database from jsonData, not the
+      # top-level field. Without it every query fails with "You do not currently
+      # have a default database configured for this data source."
+      database: psd
+      sslmode: disable
+      timescaledb: false

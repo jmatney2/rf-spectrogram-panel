@@ -1,0 +1,180 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(211, 211, 211, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "psd-pg"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "recordField": "psd",
+        "freqField": "freq_hz",
+        "valueField": "psd_db",
+        "dbMin": "",
+        "dbMax": "",
+        "normalize": "absolute",
+        "aggregate": "max",
+        "timeAxis": "dashboard",
+        "colormap": "inferno",
+        "showAxes": true,
+        "showLegend": true,
+        "demoWhenEmpty": false
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: counts"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "psd-pg"
+          },
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT\n  r.timestamp AS \"Time\",\n  b.center_hz,\n  b.span_hz,\n  translate(encode(r.psd_raw, 'base64'), E'\\n', '') AS psd\nFROM psd_records r\nJOIN bands b USING (band)\nWHERE r.band = $band\n  -- a record covers [timestamp, timestamp + 1 min): include the one that\n  -- straddles the left edge of the range\n  AND r.timestamp > $__timeFrom()::timestamptz - interval '1 minute'\n  AND r.timestamp <= $__timeTo()::timestamptz\nORDER BY r.timestamp"
+        }
+      ],
+      "title": "$band",
+      "type": "rf-spectrogram-panel",
+      "repeat": "band",
+      "repeatDirection": "v",
+      "maxPerRow": 1
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 10,
+      "title": "Dev / test panels",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "grafana-testdata-datasource",
+            "uid": "trlxrdZVk"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 41
+          },
+          "id": 1,
+          "options": {
+            "recordField": "psd",
+            "freqField": "freq_hz",
+            "valueField": "psd_db",
+            "dbMin": "",
+            "dbMax": "",
+            "normalize": "absolute",
+            "aggregate": "max",
+            "timeAxis": "data",
+            "colormap": "inferno",
+            "showAxes": true,
+            "showLegend": true,
+            "demoWhenEmpty": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "dB"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-testdata-datasource",
+                "uid": "trlxrdZVk"
+              },
+              "refId": "A",
+              "scenarioId": "no_data_points"
+            }
+          ],
+          "title": "PSD - synthetic fallback (no data)",
+          "type": "rf-spectrogram-panel"
+        }
+      ]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "spectrogram"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "band",
+        "label": "Band",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "psd-pg"
+        },
+        "query": "SELECT band AS __value, name AS __text FROM bands ORDER BY band",
+        "definition": "SELECT band AS __value, name AS __text FROM bands ORDER BY band",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": [],
+        "sort": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Provisioned spectrogram dashboard",
+  "uid": "rf-spectrogram",
+  "version": 3,
+  "weekStart": ""
+}

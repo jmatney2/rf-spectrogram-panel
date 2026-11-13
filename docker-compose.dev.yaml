@@ -1,0 +1,28 @@
+include:
+  - docker-compose.psd.yaml
+
+services:
+  grafana:
+    user: root
+    container_name: 'rf-spectrogram-panel'
+    image: grafana/grafana:13.2
+    ports:
+      - "3123:3000/tcp"
+    volumes:
+      - ./dist:/var/lib/grafana/plugins/rf-spectrogram-panel
+      - ./provisioning:/etc/grafana/provisioning
+    environment:
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      # Basic auth is enabled so @grafana/plugin-e2e's auth setup can log in
+      # as admin/admin (the default admin user in a fresh Grafana DB).
+      # Anonymous access stays on for ad-hoc browser use.
+      GF_AUTH_BASIC_ENABLED: "true"
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: rf-spectrogram-panel
+      GF_LOG_LEVEL: debug
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_AUTH_ANONYMOUS_ALLOW_SIGNATURE: "true"
+      GF_AUTH_TOKEN_EXPIRY: 720h
+    depends_on:
+      - psd
